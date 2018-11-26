@@ -44,9 +44,7 @@ applyBlockRaw applyFees toVerify block = do
     let stateDBM = nsStateDBActions sdActions
 
     (blockCS, stateCS) <-
-        let actions = SD.constructCompositeActions @BlockPlusAVLComposition
-                                                   (SD.dmaAccessActions blockDBM)
-                                                   (SD.dmaAccessActions stateDBM)
+        let actions = sdActionsComposition sdActions
             rwComp = do
               sblock <- SD.liftERoComp $ expandBlock applyFees block
               -- getCurrentTime requires MonadIO

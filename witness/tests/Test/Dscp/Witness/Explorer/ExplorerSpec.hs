@@ -6,6 +6,7 @@ import Dscp.Core
 import Dscp.Crypto
 import Dscp.Snowdrop.Configuration
 import Dscp.Snowdrop.Mode
+import Dscp.Snowdrop.ReadMode
 import Dscp.Snowdrop.Types
 import Dscp.Util
 import Dscp.Util.Test
@@ -21,7 +22,8 @@ createAndSubmitTx
 createAndSubmitTx genSecret = do
     sk <- pick $ mkSecretKeyData <$> genSecret
     outs <- pick $ genSafeTxOuts 100 (choose (1, 5))
-    account <- lift . runSdReadM $ fromMaybe def <$> getMempoolAccountMaybe (skAddress sk)
+    account <- lift . runSdReadM @'ChainAndMempool $
+               fromMaybe def <$> getAccountMaybe (skAddress sk)
 
     let txw = createTxw (fcMoney feeConfig) sk (aNonce account) outs
     lift $ addTxToMempool (GMoneyTxWitnessed txw)
