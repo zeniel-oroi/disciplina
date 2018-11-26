@@ -43,7 +43,7 @@ applyBlockRaw applyFees toVerify block = do
     let blockDBM = nsBlockDBActions sdActions
     let stateDBM = nsStateDBActions sdActions
 
-    (blockCS, stateCS) <-
+    (stateCS, blockCS) <-
         let actions = sdActionsComposition sdActions
             rwComp = do
               sblock <- SD.liftERoComp $ expandBlock applyFees block
@@ -71,7 +71,7 @@ applyBlockRaw applyFees toVerify block = do
               Avlp.initAVLStorage @AvlHash plugin initAccounts
 
               res <- SD.runERwCompIO actions def rwComp <&>
-                  \((), (SD.CompositeChgAccum blockCS_ stateCS_)) -> (blockCS_, stateCS_)
+                  \((), (SD.CompositeChgAccum stateCS_ blockCS_)) -> (stateCS_, blockCS_)
 
               return res
 
