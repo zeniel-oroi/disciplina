@@ -16,6 +16,7 @@ library:
     - beam-core
     - beam-sqlite >= 0.3.2.3
     - bytestring
+    - constraints
     - containers
     - data-default
     - directory

@@ -12,6 +12,10 @@ module Dscp.DB.SQLite.Functions
        , borrowConnection
        , forEachConnection
 
+         -- * Backends
+       , SQLBackend (..)
+       , SomeSQLBackend (..)
+
          -- * SQLite context
        , DBT
        , TransactionalContext (WithinTx)
@@ -42,28 +46,30 @@ module Dscp.DB.SQLite.Functions
 
 import Control.Concurrent (getNumCapabilities)
 import Control.Concurrent.Chan (newChan, readChan, writeChan)
-import Control.Monad.Reader (mapReaderT)
 import qualified Data.List as L
+import Data.Reflection (Given (..), give)
 import Database.Beam.Backend (FromBackendRow, MonadBeam (..))
 import qualified Database.Beam.Backend.SQL.BeamExtensions as Backend
-import Database.Beam.Backend.SQL.SQL92 (Sql92DeleteSyntax, Sql92InsertSyntax, Sql92SelectSyntax,
-                                        Sql92UpdateSyntax)
+import Database.Beam.Backend.SQL.SQL92 (IsSql92Syntax, Sql92DeleteSyntax, Sql92InsertSyntax,
+                                        Sql92SelectSyntax, Sql92UpdateSyntax)
 import Database.Beam.Query (QExpr, SqlDelete, SqlInsert, SqlInsertValues, SqlSelect, SqlUpdate)
-import qualified Database.Beam.Query as Backend
-import Database.Beam.Schema (DatabaseEntity, TableEntity)
+import qualified Database.Beam.Query as Query
+import Database.Beam.Schema (Beamable, DatabaseEntity, TableEntity)
 import Database.Beam.Sqlite (Sqlite, SqliteCommandSyntax, SqliteM (..))
 import Database.SQLite.Simple (Connection)
 import qualified Database.SQLite.Simple as Backend
 import Loot.Base.HasLens (HasCtx, HasLens (..))
-import qualified Loot.Log as Log
 import qualified System.Console.ANSI as ANSI
 import Time (Millisecond, sec, toNum, toUnit)
-import UnliftIO (MonadUnliftIO (..), UnliftIO (..), askUnliftIO)
+import UnliftIO (MonadUnliftIO (..))
 import qualified UnliftIO as UIO
 
 import Dscp.DB.SQLite.Error
+import Dscp.DB.SQLite.Instances
 import Dscp.DB.SQLite.Types
 import Dscp.Util
+
+-- TODO remove dependency on instances ^
 
 -----------------------------------------------------------
 -- Operations with plain connections
@@ -297,6 +303,22 @@ withConnection f = DBT $ ReaderT (liftIO . f)
 -- DBT runners
 ------------------------------------------------------------
 
+-- | Tagged specifier of SQL backend engine.
+data SQLBackend cmd be hdl bm where
+    SQLiteBackend :: SQLBackend SqliteCommandSyntax Sqlite Connection SqliteM
+
+-- | Untagged specifier of SQL backend engine.
+data SomeSQLBackend where
+    SomeSQLBackend
+        :: MonadQueryFull cmd be hdl bm
+        => SQLBackend cmd be hdl bm -> SomeSQLBackend
+
+-- | Helper to set backend monad.
+restrictBackendMonad
+    :: (Monad bm, MonadQuery cmd be Connection bm)
+    => SQLBackend cmd be hdl bm -> bm ()
+restrictBackendMonad _ = pass
+
 -- | Run 'DBT' without carying about whether it assumes to be run in transaction
 -- or not.
 invokeUnsafe
@@ -362,13 +384,6 @@ sqlDebugLogger msg =
     , msg
     ]
 
--- | Enables SQLite tracing locally. For debug purposes.
---
--- Note: if any trace handler was set globally, it will be lost after that.
-traced :: MonadUnliftIO m => DBT t w m a -> DBT t w m a
-traced action = do
-    conn <- DBT ask
-    UIO.bracket_
-        (liftIO $ Backend.setTrace conn (Just $ sqlDebugLogger . toString))
-        (liftIO $ Backend.setTrace conn Nothing)
-        action
+-- | Enables SQL queries tracing locally. For debug purposes.
+traced :: MonadUnliftIO m => SqliteM a -> SqliteM a
+traced = SqliteM . local (_1 .~ sqlDebugLogger) . runSqliteM

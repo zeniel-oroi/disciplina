@@ -46,8 +46,8 @@ import Dscp.Util.Servant (ForResponseLog (..), buildForResponse, buildLongRespon
                           buildShortResponseList)
 import Dscp.Witness.Launcher.Context
 
-type MonadEducatorWebQuery m =
-    ( MonadIO m
+type MonadEducatorWebQuery cmd be hdl m =
+    ( MonadQuery cmd be hdl m
     , MonadCatch m
     , MonadLogging m
     , ModifyLogName m
@@ -55,7 +55,7 @@ type MonadEducatorWebQuery m =
 
 type MonadEducatorWeb ctx m =
     ( WitnessWorkMode ctx m
-    , HasCtx ctx m '[SQLiteDB, KeyResources EducatorNode]
+    , HasCtx ctx m '[SQLiteDB, SomeSQLBackend, KeyResources EducatorNode]
     )
 
 ---------------------------------------------------------------------------
