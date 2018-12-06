@@ -22,6 +22,9 @@ module Dscp.Util.Servant
     , ApiCanLogArg (..)
 
     , SimpleJSON
+
+      -- * Utilities for clients
+    , AsClientT
     ) where
 
 import Prelude hiding (log)
@@ -36,7 +39,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Buildable as B
 import qualified Data.Text.Lazy.Builder as B
 import Data.Time.Clock.POSIX (getPOSIXTime)
-import Fmt (blockListF, (+|), (|+), Builder)
+import Fmt (Builder, blockListF, (+|), (|+))
 import GHC.IO.Unsafe (unsafePerformIO)
 import GHC.TypeLits (KnownSymbol, symbolVal)
 import Loot.Log (Severity (Info))
@@ -45,6 +48,8 @@ import Serokell.Util.ANSI (Color (..), colorizeDull)
 import Servant.API ((:<|>) (..), (:>), Capture, Description, JSON, NoContent, QueryFlag, QueryParam,
                     ReflectMethod (..), ReqBody, Summary, Verb)
 import Servant.API.ContentTypes (Accept (..), MimeRender (..), MimeUnrender (..))
+import Servant.Client.Core (Client)
+import Servant.Generic ((:-))
 import Servant.Server (Handler (..), HasServer (..), ServantErr (..), Server)
 import qualified Servant.Server.Internal as SI
 
@@ -437,9 +442,9 @@ buildShortResponseList = blockListF . (take 4) . unForResponseLog
 buildLongResponseList :: Buildable a => ForResponseLog [a] -> Builder
 buildLongResponseList = blockListF . (take 8) . unForResponseLog
 
--------------------------------------------------------------------------
+---------------------------------------------------------------------------
 -- Deserialisation errors
--------------------------------------------------------------------------
+---------------------------------------------------------------------------
 
 -- | Custom json marker which sends no human-unreadable decoding errors
 -- but a given fixed one.
@@ -453,3 +458,11 @@ instance (FromJSON a, Reifies err String) => MimeUnrender (SimpleJSON err) a whe
     mimeUnrender _ =
         let errMsg = reflect (Proxy @err)
         in first (\_ -> errMsg) . eitherDecode
+
+---------------------------------------------------------------------------
+-- Client stuff
+---------------------------------------------------------------------------
+
+-- todo: not needed with servant-client-0.14 (lts-12)
+data AsClientT (m :: * -> *)
+type instance AsClientT m :- api = Client m api
