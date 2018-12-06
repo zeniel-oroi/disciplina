@@ -9,11 +9,11 @@ module Dscp.Witness.Launcher.Entry
 
 import Control.Concurrent (threadDelay)
 import Fmt ((+|), (|+))
-import Loot.Config (option, sub)
 import Loot.Log (logDebug, logInfo)
 import Time (sec)
 import UnliftIO.Async (async, cancel)
 
+import Dscp.Config (option, sub)
 import Dscp.Network (runListener, runWorker, withServer)
 import Dscp.Util.TimeLimit
 import Dscp.Witness.Config

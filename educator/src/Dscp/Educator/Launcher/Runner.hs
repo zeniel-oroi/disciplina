@@ -7,7 +7,6 @@ module Dscp.Educator.Launcher.Runner
     , launchEducatorRealMode
     ) where
 
-import Loot.Config (option, sub)
 import Loot.Log (MonadLogging)
 
 import Dscp.Config

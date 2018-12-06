@@ -8,7 +8,6 @@ module Dscp.Educator.Launcher.Resource
        ) where
 
 import Control.Lens (makeLenses)
-import Loot.Config (option, sub)
 
 import Dscp.Config
 import Dscp.DB.SQLite (SQLiteDB)

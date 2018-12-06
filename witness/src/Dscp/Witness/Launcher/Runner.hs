@@ -8,9 +8,9 @@ module Dscp.Witness.Launcher.Runner
     , launchWitnessRealMode
     ) where
 
-import Loot.Config (option, sub)
 import Loot.Log (MonadLogging)
 
+import Dscp.Config (option, sub)
 import Dscp.Resource.Class (AllocResource (..), InitParams (..))
 import Dscp.Resource.Functions
 import Dscp.Resource.Keys (krPublicKey)

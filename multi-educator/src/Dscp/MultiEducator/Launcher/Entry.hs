@@ -7,10 +7,10 @@ module Dscp.MultiEducator.Launcher.Entry
     ) where
 
 import Control.Concurrent (threadDelay)
-import Loot.Config (option, sub)
 import Loot.Log (logInfo)
 import UnliftIO.Async (async)
 
+import Dscp.Config (option, sub)
 import Dscp.MultiEducator.Config
 import Dscp.MultiEducator.Launcher.Mode
 import Dscp.MultiEducator.Web.Server

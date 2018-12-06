@@ -9,7 +9,6 @@ module Dscp.MultiEducator.Web.Server
 
 import Data.Proxy (Proxy (..))
 import Fmt ((+|), (|+))
-import Loot.Config (option, sub)
 import Loot.Log (logInfo)
 import Network.HTTP.Types.Header (hAuthorization, hContentType)
 import Network.Wai (Middleware)
@@ -22,6 +21,7 @@ import Servant.Auth.Server.Internal.ThrowAll (throwAll)
 import Servant.Generic (toServant)
 import UnliftIO (askUnliftIO)
 
+import Dscp.Config (option, sub)
 import Dscp.Educator.Web.Auth
 import Dscp.Educator.Web.Bot
 import Dscp.Educator.Web.Educator (EducatorAPI, convertEducatorApiHandler, educatorAPI,

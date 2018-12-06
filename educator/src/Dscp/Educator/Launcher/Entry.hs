@@ -7,11 +7,11 @@ module Dscp.Educator.Launcher.Entry
     ) where
 
 import Control.Concurrent (threadDelay)
-import Loot.Config (option, sub)
 import Loot.Log (logInfo)
 import Time (sec)
 import UnliftIO.Async (async, cancel)
 
+import Dscp.Config (option, sub)
 import Dscp.Educator.Config
 import Dscp.Educator.Launcher.Mode
 import Dscp.Educator.Web.Server

@@ -24,7 +24,6 @@ module Dscp.MultiEducator.Launcher.Mode
 import Control.Lens (makeLenses)
 import qualified Data.Map as M
 import Loot.Base.HasLens (HasLens', lensOf)
-import Loot.Config (option, sub)
 import System.Directory (canonicalizePath, createDirectoryIfMissing)
 import System.FilePath.Posix ((</>))
 
