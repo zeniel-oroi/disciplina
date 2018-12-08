@@ -40,6 +40,6 @@ studentMakeSubmissionVerified student newSubmission = do
     signedSubmission <- requestToSignedSubmission newSubmission
     verifyStudentSubmission student signedSubmission
         & leftToThrow BadSubmissionSignature
-    transactW $ do
+    transact $ do
         submissionId <- submitAssignment signedSubmission
         studentGetSubmission student submissionId
