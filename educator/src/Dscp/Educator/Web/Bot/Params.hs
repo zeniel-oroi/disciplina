@@ -1,30 +1,24 @@
 module Dscp.Educator.Web.Bot.Params
-    ( EducatorBotParams (..)
-    , ebpEnabledL
-    , ebpSeedL
-    , ebpOperationsDelayL
+    ( EducatorBotParams
+    , EducatorBotParamsRec
+    , EducatorBotParamsRecP
     ) where
 
-import Control.Lens (makeLensesWith)
-import Data.Aeson.Options (defaultOptions)
-import Data.Aeson.TH (deriveFromJSON)
+import Loot.Config ((:::), Config, PartialConfig)
 import Time.Units (Microsecond, Time)
-
-import Dscp.Util (postfixLFields)
-import Dscp.Util.Aeson ()
 
 -- | Which params to use when launching bot.
 -- Bool flag is used instead of `Maybe` value or custom sum type
 -- to allow for specifying default values for bot params in
 -- default config even though bot should be disabled by default.
-data EducatorBotParams = EducatorBotParams
-    { ebpEnabled         :: !Bool
+type EducatorBotParams =
+   '[ "enabled" ::: Bool
       -- ^ Whether or not the bot is enabled
-    , ebpSeed            :: !Text
+    , "seed" ::: Text
       -- ^ Seed to generate initial data (assignments, ...).
-    , ebpOperationsDelay :: !(Time Microsecond)
+    , "operationsDelay" ::: Time Microsecond
       -- ^ Artificial delay in bot operations.
-    } deriving (Show, Eq)
+    ]
 
-makeLensesWith postfixLFields ''EducatorBotParams
-deriveFromJSON defaultOptions ''EducatorBotParams
+type EducatorBotParamsRec = Config EducatorBotParams
+type EducatorBotParamsRecP = PartialConfig EducatorBotParams

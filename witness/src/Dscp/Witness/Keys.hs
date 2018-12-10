@@ -1,29 +1,34 @@
 {-# LANGUAGE StrictData #-}
 
 module Dscp.Witness.Keys
-       ( WitnessKeyParams (..)
-       , _Basic
-       , _Committee
+       ( WitnessKeyParams
+       , WitnessKeyParamsRec
+       , WitnessKeyParamsRecP
+
+       , WitnessKeysParams
+       , WitnessKeysParamsRec
+       , WitnessKeysParamsRecP
        ) where
 
-import Control.Lens (makePrisms)
-import Data.Aeson (FromJSON (..), Value (..), withObject, (.:))
+import Loot.Config ((::+), (::-), Config, PartialConfig)
 
 import Dscp.Resource.Keys
 
 -- | Witness key parameters.
-data WitnessKeyParams
-    = Basic BaseKeyParams       -- ^ Basic key management with a keyfile
-    | Committee CommitteeParams -- ^ Generate a key from committee params
-    deriving (Show, Eq)
+type WitnessKeyParams =
+   '[ "basic" ::- BaseKeyParams
+      -- ^ Basic key management with a keyfile
+    , "committee" ::- CommitteeKeyParams
+      -- ^ Generate a key from committee params
+    ]
 
-makePrisms ''WitnessKeyParams
+type WitnessKeyParamsRec = Config WitnessKeyParams
+type WitnessKeyParamsRecP = PartialConfig WitnessKeyParams
 
--- | JSON instance (for configuration specs)
-instance FromJSON WitnessKeyParams where
-    parseJSON = withObject "WitnessKeyParams" $ \o -> do
-        typ :: Text <- o .: "type"
-        case typ of
-            "basic"     -> Basic <$> parseJSON (Object o)
-            "committee" -> Committee <$> parseJSON (Object o)
-            _           -> fail $ "Unrecognized key params type: " ++ toString typ
+-- | Wrapper for 'WitnessKeyParams', this helps passing the vinyl record around
+type WitnessKeysParams =
+   '[ "params" ::+ WitnessKeyParams
+    ]
+
+type WitnessKeysParamsRec = Config WitnessKeysParams
+type WitnessKeysParamsRecP = PartialConfig WitnessKeysParams

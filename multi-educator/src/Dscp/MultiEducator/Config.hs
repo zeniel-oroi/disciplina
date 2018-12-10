@@ -29,7 +29,7 @@ import Dscp.Witness.Config
 
 type MultiEducatorConfig = WitnessConfig ++
     '[ "educator" ::<
-       '[ "db" ::: SQLiteParams
+       '[ "db" ::< SQLiteParams
         , "keys" ::: MultiEducatorKeyParams
         , "api" ::< EducatorWebConfig
         , "publishing" ::<
@@ -45,15 +45,20 @@ type HasMultiEducatorConfig = Given MultiEducatorConfigRec
 
 defaultMultiEducatorConfig :: MultiEducatorConfigRecP
 defaultMultiEducatorConfig = upcast defaultWitnessConfig
-    & sub #educator . option #db ?~ defSqliteParams
-    & sub #educator . sub #api . option #botParams ?~ defBotParams
+    & sub #educator . sub #db .~ defSqliteParams
+    & sub #educator . sub #api . sub #botParams .~ defBotParams
   where
-    defSqliteParams = SQLiteParams $ SQLiteReal $ SQLiteRealParams
-        { srpPath = "educator-db"
-        , srpConnNum = Nothing
-        , srpMaxPending = 200
-        }
-    defBotParams = EducatorBotParams False "Memes generator" 0
+    defSqliteParams :: SQLiteParamsRecP
+    defSqliteParams = mempty
+        & tree #mode . selection ?~ "real"
+        & tree #mode . branch #real . option #path       ?~ "educator-db"
+        & tree #mode . branch #real . option #connNum    ?~ Nothing
+        & tree #mode . branch #real . option #maxPending ?~ 200
+    defBotParams :: EducatorBotParamsRecP
+    defBotParams = mempty
+        & option #enabled         ?~ False
+        & option #seed            ?~ "Memes generator"
+        & option #operationsDelay ?~ 0
 
 -- instance (HasEducatorConfig, cfg ~ WitnessConfigRec) => Given cfg where
 --     given = rcast (given @EducatorConfigRec)

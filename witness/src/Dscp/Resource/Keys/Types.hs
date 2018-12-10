@@ -1,9 +1,15 @@
 module Dscp.Resource.Keys.Types
-    ( BaseKeyParams (..)
-    , bkpPathL
-    , bkpGenNewL
-    , bkpPassphraseL
-    , CommitteeParams (..)
+    ( BaseKeyParams
+    , BaseKeyParamsRec
+    , BaseKeyParamsRecP
+
+    , CommitteeParams
+    , CommitteeParamsRec
+    , CommitteeParamsRecP
+
+    , CommitteeKeyParams
+    , CommitteeKeyParamsRec
+    , CommitteeKeyParamsRecP
 
     , KeyResources (..)
 
@@ -18,45 +24,57 @@ module Dscp.Resource.Keys.Types
     , ourSecretKeyData
     ) where
 
-import Control.Lens (Getter, makeLenses, makeLensesWith, to)
+import Control.Lens (Getter, makeLenses, to)
 import Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.=))
-import Data.Aeson.Options (defaultOptions)
-import Data.Aeson.TH (deriveJSON)
 import Loot.Base.HasLens (HasLens', lensOf)
+import Loot.Config ((::+), (::-), (:::), Config, PartialConfig)
 
 import Dscp.Core.Aeson ()
 import Dscp.Core.Foundation.Address
 import Dscp.Core.Foundation.Witness
 import Dscp.Core.Governance (CommitteeSecret (..))
 import Dscp.Crypto (Encrypted, PassPhrase, PublicKey, SecretKey)
-import Dscp.Util (postfixLFields)
 import Dscp.Util.Aeson (Base64Encoded, CustomEncoding (..), Versioned)
 
 -- | Contains all parameters required for manipulating with secret key.
-data BaseKeyParams = BaseKeyParams
-    { bkpPath       :: !(Maybe FilePath)
+type BaseKeyParams =
+   '[ "path"       ::: Maybe FilePath
       -- ^ Path to file with secret key.
       -- If not specified, some default OS-dependent path is used.
-    , bkpGenNew     :: !Bool
+    , "genNew"     ::: Bool
       -- ^ When 'True', file with secret key is expected to be
       -- absent and will be generated from scratch.
+    , "passphrase" ::: Maybe PassPhrase
       -- When 'False', file should be present and it will be used.
-    , bkpPassphrase :: !(Maybe PassPhrase)
       -- ^ Password of encrypted secret key stored on disk.
-    } deriving (Show, Eq)
+    ]
 
-makeLensesWith postfixLFields ''BaseKeyParams
+type BaseKeyParamsRec = Config BaseKeyParams
+type BaseKeyParamsRecP = PartialConfig BaseKeyParams
 
 -- | In case of committee governance, these keys help us to generate
 -- keys.
-data CommitteeParams
-    = CommitteeParamsOpen { cpParticipantN :: Integer }
+type CommitteeParams =
+   '[ "participantN" ::: Integer
+      -- ^ This is necessary to both types of committee
+    , "open" ::- '[]
       -- ^ In open committee you become participant n/N.
-    | CommitteeParamsClosed { cpParticipantN :: Integer
-                            , cpSecret       :: CommitteeSecret }
-      -- ^ In closed committee you should provide a (common) secret
-      -- and your index.
-    deriving (Show, Eq)
+    , "closed" ::-
+       '[ "secret" ::: CommitteeSecret
+        ]
+      -- ^ In closed committee you should provide a (common) secret and your index.
+    ]
+
+type CommitteeParamsRec = Config CommitteeParams
+type CommitteeParamsRecP = PartialConfig CommitteeParams
+
+-- | Wrapper for 'CommitteeParams', this helps passing the vinyl record around
+type CommitteeKeyParams =
+   '[ "params" ::+ CommitteeParams
+    ]
+
+type CommitteeKeyParamsRec = Config CommitteeKeyParams
+type CommitteeKeyParamsRecP = PartialConfig CommitteeKeyParams
 
 -- | Context providing access to secret key.
 --
@@ -100,22 +118,6 @@ instance FromJSON KeyJson where
     parseJSON = withObject "secret storage" $ \o -> do
         kjEncSecretKey <- o .: "secret"
         return KeyJson{..}
-
--- | Instances for config params related to keys.
-instance FromJSON CommitteeParams where
-  parseJSON = withObject "committee seed params" $ \o -> do
-    (committeeParamsType :: Text) <- o .: "committeeType"
-    case committeeParamsType of
-        "open" -> do
-            cpParticipantN <- o .: "n"
-            return $ CommitteeParamsOpen {..}
-        "closed" -> do
-            cpParticipantN <- o .: "n"
-            cpSecret <- o .: "secret"
-            return $ CommitteeParamsClosed {..}
-        _ -> fail "Governance type is invalid"
-
-deriveJSON defaultOptions ''BaseKeyParams
 
 ---------------------------------------------------------------------
 -- HasLens

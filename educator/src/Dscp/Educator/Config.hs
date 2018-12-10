@@ -26,13 +26,12 @@ import Dscp.DB.SQLite
 import Dscp.Educator.Launcher.Params
 import Dscp.Educator.Web.Bot.Params
 import Dscp.Educator.Web.Config
-import Dscp.Resource.Keys
 import Dscp.Witness.Config
 
 type EducatorConfig = WitnessConfig ++
     '[ "educator" ::<
-       '[ "db" ::: SQLiteParams
-        , "keys" ::: EducatorKeyParams
+       '[ "db" ::< SQLiteParams
+        , "keys" ::< EducatorKeyParams
         , "api" ::< EducatorWebConfig
         , "publishing" ::<
            '[ "period" ::: Time Second
@@ -47,17 +46,25 @@ type HasEducatorConfig = (Given EducatorConfigRec, HasWitnessConfig)
 
 defaultEducatorConfig :: EducatorConfigRecP
 defaultEducatorConfig = upcast defaultWitnessConfig
-    & sub #educator . option #db ?~ defSqliteParams
-    & sub #educator . option #keys ?~ defKeyParams
-    & sub #educator . sub #api . option #botParams ?~ defBotParams
+    & sub #educator . sub #db .~ defSqliteParams
+    & sub #educator . sub #keys . sub #keyParams .~ defBaseKeyParams
+    & sub #educator . sub #api . sub #botParams .~ defBotParams
   where
-    defSqliteParams = SQLiteParams $ SQLiteReal $ SQLiteRealParams
-        { srpPath = "educator-db"
-        , srpConnNum = Nothing
-        , srpMaxPending = 200
-        }
-    defKeyParams = EducatorKeyParams $ BaseKeyParams Nothing False Nothing
-    defBotParams = EducatorBotParams False "Memes generator" 0
+    defSqliteParams :: SQLiteParamsRecP
+    defSqliteParams = mempty
+        & tree #mode . selection ?~ "real"
+        & tree #mode . branch #real . option #path       ?~ "educator-db"
+        & tree #mode . branch #real . option #connNum    ?~ Nothing
+        & tree #mode . branch #real . option #maxPending ?~ 200
+    defBaseKeyParams = mempty
+        & option #path       ?~ Nothing
+        & option #genNew     ?~ False
+        & option #passphrase ?~ Nothing
+    defBotParams :: EducatorBotParamsRecP
+    defBotParams = mempty
+        & option #enabled         ?~ False
+        & option #seed            ?~ "Memes generator"
+        & option #operationsDelay ?~ 0
 
 -- instance (HasEducatorConfig, cfg ~ WitnessConfigRec) => Given cfg where
 --     given = rcast (given @EducatorConfigRec)

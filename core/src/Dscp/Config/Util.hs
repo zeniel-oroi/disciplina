@@ -19,6 +19,10 @@ module Dscp.Config.Util
       -- * Re-exports from 'Loot.Config'
     , sub
     , option
+    , tree
+    , branch
+    , selection
+    , finaliseDeferredUnsafe
 
       -- * Config parsing and building
     , ConfigParams (..)
@@ -32,14 +36,19 @@ module Dscp.Config.Util
     , giveL
     , HasGivenC
     , giveLC
+
+      -- * Helper functions
+    , peekBranch
     ) where
 
 import Control.Applicative.Combinators.NonEmpty as NonEmpty (some)
+import Control.Lens (Contravariant, to)
 import Data.Aeson (Result (..), Value (Object), fromJSON)
 import qualified Data.HashMap.Strict as HM
 import Data.Reflection (reifySymbol)
 import Data.Reflection (Given (..))
 import qualified Data.Text.Buildable
+import Data.Vinyl.Derived (Label)
 import Data.Vinyl.Lens (type (<:), rcast, rreplace)
 import Data.Vinyl.TypeLevel (type (++))
 import Data.Yaml (FromJSON (..), ParseException (AesonException), decodeFileEither, withObject,
@@ -47,8 +56,10 @@ import Data.Yaml (FromJSON (..), ParseException (AesonException), decodeFileEith
 import Fmt (blockListF)
 import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
 import Loot.Base.HasLens (HasLens', lensOf)
-import Loot.Config (ConfigKind (Final, Partial), ConfigRec, HasLensC, finalise, lensOfC, option,
-                    sub)
+import Loot.Config (ConfigKind (Final, Partial), ConfigRec, HasLensC, finalise, 
+                    finaliseDeferredUnsafe, lensOfC, option, sub, tree, branch,
+                    selection)
+import Loot.Config.Record (HasBranch)
 import qualified Options.Applicative as Opt
 import qualified Text.Show
 
@@ -177,3 +188,14 @@ type HasGivenC path is v =
 
 giveLC :: forall path is v . HasGivenC path is v => v
 giveLC = given ^. (lensOfC @path @is @v)
+
+-- | Helper function to read the content of a 'finalise'd 'branch' by unsafely
+-- traversing the Maybe. This should only be used on the selected 'branch', in 
+-- which case no error will be thrown.
+peekBranch
+    :: (HasBranch l is us, Contravariant g, Functor g, a ~ ConfigRec 'Final us)
+    => Label l
+    -> (a -> g a)
+    -> ConfigRec 'Final is
+    -> g (ConfigRec 'Final is)
+peekBranch l = branch l . to (fromMaybe (error "accessed unselected branch"))

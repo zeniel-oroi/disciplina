@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedLabels #-}
+
 module Dscp.Educator.Logic.Publishing
     ( dumpPrivateBlock
     , updateMempoolWithPublications
@@ -7,6 +9,7 @@ import Fmt (build, fmt, listF, nameF)
 import Loot.Log (logInfo)
 import Snowdrop.Util (OldestFirst (..))
 
+import Dscp.Config (option)
 import Dscp.Core
 import Dscp.DB.SQLite
 import Dscp.Educator.DB
@@ -37,7 +40,7 @@ publishMissingBlocks =
         ctx <- ask
         sk <- ourSecretKeyData @EducatorNode
         privTip <- runSdMempool $ getPrivateTipHash (skAddress sk)
-        let feePolicy = fcPublication feeConfig
+        let feePolicy = feeConfig ^. option #publication
 
         OldestFirst blocks :: OldestFirst [] PrivateBlockHeader <-
             invoke (getPrivateBlocksAfterHash ctx privTip)

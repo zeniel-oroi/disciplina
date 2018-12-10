@@ -1,56 +1,61 @@
 module Dscp.DB.SQLite.Types
        ( -- * SQLite bindings
-         SQLiteRealParams (..)
-       , srpPathL
-       , srpConnNumL
-       , srpMaxPendingL
-       , SQLiteDBMode (..)
-       , _SQLiteReal
-       , _SQLiteInMemory
+         SQLiteRealParams
+       , SQLiteRealParamsRec
+       , SQLiteRealParamsRecP
+
+       , SQLiteDBMode
+       , SQLiteDBModeRec
+       , SQLiteDBModeRecP
+
+       , SQLiteParams
+       , SQLiteParamsRec
+       , SQLiteParamsRecP
+
        , SQLiteDB (..)
-       , SQLiteParams (..)
-       , sdpModeL
        ) where
 
 import Control.Concurrent.Chan (Chan)
-import Control.Lens (makeLensesWith, makePrisms)
-import Data.Aeson (FromJSON (..))
-import Data.Aeson.Options (defaultOptions)
-import Data.Aeson.TH (deriveFromJSON)
 import Database.SQLite.Simple (Connection)
-
-import Dscp.Util
+import Loot.Config ((::+), (:::), (::-), Config, PartialConfig)
 
 ----------------------------------------------------------
 -- SQLite bindings
 ----------------------------------------------------------
 
-data SQLiteRealParams = SQLiteRealParams
-    { srpPath       :: !FilePath
+type SQLiteRealParams =
+   '[ "path"       ::: FilePath
       -- ^ Path to the file with database.
-    , srpConnNum    :: !(Maybe Int)
+    , "connNum"    ::: Maybe Int
       -- ^ Connections pool size.
-    , srpMaxPending :: !Int
+    , "maxPending" ::: Int
       -- ^ Maximal number of requests waiting for a free connection.
-    } deriving (Show, Eq)
+    ]
 
-makeLensesWith postfixLFields ''SQLiteRealParams
+type SQLiteRealParamsRec = Config SQLiteRealParams
+type SQLiteRealParamsRecP = PartialConfig SQLiteRealParams
+
 
 -- | Database mode.
-data SQLiteDBMode
-    = SQLiteReal !SQLiteRealParams
+type SQLiteDBMode =
+   '[ "real"     ::- SQLiteRealParams
       -- ^ In given file using given number of connections
-    | SQLiteInMemory
+    , "inMemory" ::- '[]
       -- ^ In memory
-    deriving (Show, Eq)
+    ]
 
-makePrisms ''SQLiteDBMode
+type SQLiteDBModeRec = Config SQLiteDBMode
+type SQLiteDBModeRecP = PartialConfig SQLiteDBMode
 
-data SQLiteParams = SQLiteParams
-    { sdpMode :: SQLiteDBMode
-    } deriving (Show, Eq)
 
-makeLensesWith postfixLFields ''SQLiteParams
+-- | Wrapper for 'SQLiteDBMode', this helps passing the vinyl record around
+type SQLiteParams =
+   '[ "mode" ::+ SQLiteDBMode
+    ]
+
+type SQLiteParamsRec = Config SQLiteParams
+type SQLiteParamsRecP = PartialConfig SQLiteParams
+
 
 data SQLiteDB = SQLiteDB
     { sdConnPool   :: Chan Connection
@@ -63,15 +68,3 @@ data SQLiteDB = SQLiteDB
     , sdMaxPending :: Int
       -- ^ Allowed number of pending threads.
     }
-
-deriveFromJSON defaultOptions ''SQLiteRealParams
-
--- | Isomorphism between @Maybe SQLiteRealParams@ and 'SQLiteDBMode'
-maybeToSQLiteDBLoc :: Maybe SQLiteRealParams -> SQLiteDBMode
-maybeToSQLiteDBLoc Nothing       = SQLiteInMemory
-maybeToSQLiteDBLoc (Just params) = SQLiteReal params
-
-instance FromJSON SQLiteDBMode where
-    parseJSON = fmap maybeToSQLiteDBLoc . parseJSON
-
-deriveFromJSON defaultOptions ''SQLiteParams

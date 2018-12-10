@@ -14,7 +14,6 @@ import Dscp.DB.SQLite (SQLiteDB)
 import Dscp.Educator.Config
 import Dscp.Educator.DB.Resource ()
 import Dscp.Educator.Launcher.Marker (EducatorNode)
-import Dscp.Educator.Launcher.Params (EducatorKeyParams (..))
 import Dscp.Resource.AppDir
 import Dscp.Resource.Class (AllocResource (..), buildComponentR)
 import Dscp.Resource.Keys (KeyResources (..), linkStore)
@@ -39,8 +38,7 @@ deriveHasLens 'erWitnessResources ''EducatorResources ''NetServResources
 instance AllocResource (KeyResources EducatorNode) where
     type Deps (KeyResources EducatorNode) = (EducatorConfigRec, AppDir)
     allocResource (educatorCfg, appDir) =
-        let EducatorKeyParams baseParams =
-                educatorCfg ^. sub #educator . option #keys
+        let baseParams = educatorCfg ^. sub #educator . sub #keys . sub #keyParams
         in buildComponentR "educator keys"
            (withCoreConfig (rcast educatorCfg) $
                linkStore baseParams appDir)
@@ -53,7 +51,7 @@ instance AllocResource EducatorResources where
             witnessCfg = rcast educatorCfg
         _erWitnessResources <- withWitnessConfig witnessCfg $
                                allocResource witnessCfg
-        _erDB <- allocResource $ cfg ^. option #db
+        _erDB <- allocResource $ cfg ^. sub #db
         let appDir = Witness._wrAppDir _erWitnessResources
         _erKeys <- allocResource (educatorCfg, appDir)
         return EducatorResources {..}

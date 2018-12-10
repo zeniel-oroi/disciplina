@@ -1,5 +1,9 @@
+{-# LANGUAGE OverloadedLabels #-}
+
 module Test.Dscp.Educator.Bot.Endpoints where
 
+import Control.Lens ((?~))
+import Dscp.Config
 import Dscp.Core.Arbitrary
 import Dscp.Crypto
 import Dscp.Educator.Web.Bot
@@ -19,13 +23,13 @@ studentSK = studentSKEx
 testMakeBotHandlers
     :: (TestEducatorM ~ m, HasWitnessConfig)
     => Text -> m (StudentApiHandlers m)
-testMakeBotHandlers seed =
-    initializeBot
-        EducatorBotParams
-        { ebpEnabled = True
-        , ebpSeed = seed
-        , ebpOperationsDelay = 0
-        } $ pure $ addBotHandlers student (studentApiHandlers student)
+testMakeBotHandlers seed = initializeBot botParams $ pure $
+    addBotHandlers student (studentApiHandlers student)
+  where
+    botParams = finaliseDeferredUnsafe $ mempty
+        & option #enabled         ?~ True
+        & option #seed            ?~ seed
+        & option #operationsDelay ?~ 0
 
 spec_StudentApiWithBotQueries :: Spec
 spec_StudentApiWithBotQueries = describe "Basic properties" $ do

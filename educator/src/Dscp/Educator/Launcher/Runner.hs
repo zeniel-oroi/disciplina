@@ -44,5 +44,5 @@ launchEducatorRealMode config action =
   where
     appDesc = "Educator (real mode)"
     initParams = InitParams
-        { ipLoggingParams = config ^. sub #witness . option #logging
+        { ipLoggingParams = config ^. sub #witness . sub #logging
         }

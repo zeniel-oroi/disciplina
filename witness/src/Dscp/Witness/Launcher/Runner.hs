@@ -10,7 +10,7 @@ module Dscp.Witness.Launcher.Runner
 
 import Loot.Log (MonadLogging)
 
-import Dscp.Config (option, sub)
+import Dscp.Config (sub)
 import Dscp.Resource.Class (AllocResource (..), InitParams (..))
 import Dscp.Resource.Functions
 import Dscp.Resource.Keys (krPublicKey)
@@ -62,5 +62,5 @@ launchWitnessRealMode config action =
   where
     appDesc = "Witness (real mode)"
     initParams = InitParams
-        { ipLoggingParams = config ^. sub #witness . option #logging
+        { ipLoggingParams = config ^. sub #witness . sub #logging
         }

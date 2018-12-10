@@ -8,20 +8,21 @@ module Dscp.Witness.CLI
     ( rocksParamsParser
     , netCliParamsParser
     , netServParamsParser
-    , committeeParamsParser
+    , committeeKeyParamsParser
     , witnessConfigParser
     ) where
 
-import Loot.Config (ModParser, OptModParser, modifying, (%::), (..:), (.::), (.:<), (<*<))
+import Loot.Config (OptModParser, (%::), (.::), (.:<), (.:-), (.:+), (<*<), (?~))
+import qualified Loot.Config as L (option)
 import Loot.Network.ZMQ.Common (ZTNodeId (..), parseZTNodeId)
-import Options.Applicative (Parser, ReadM, auto, eitherReader, flag', help, long, maybeReader,
-                            metavar, option, strOption)
+import Options.Applicative (Parser, ReadM, auto, eitherReader, flag', help, long,
+                            maybeReader, metavar, option, strOption)
 
 import Dscp.CommonCLI
 import Dscp.Core.Governance
 import Dscp.DB.Rocks.Real.Types
 import Dscp.Resource.Keys
-import Dscp.Resource.Network (NetCliParams (..), NetServParams (..))
+import Dscp.Resource.Network (NetCliParams (..), NetServParams, NetServParamsRecP)
 import Dscp.Util (eitherToMaybe)
 import Dscp.Web.Metrics (MetricsEndpoint (..), addrToEndpoint)
 import Dscp.Witness.Config
@@ -31,10 +32,10 @@ import Dscp.Witness.Keys
 -- DB
 ----------------------------------------------------------------------------
 
-rocksParamsParser :: ModParser RocksDBParams
+rocksParamsParser :: OptModParser RocksDBParams
 rocksParamsParser =
-    rdpPathL  ..: pathParser <*<
-    rdpCleanL ..: cleanParser
+    #path  .:: pathParser <*<
+    #clean .:: cleanParser
   where
     pathParser =  strOption $
         long "db-path" <>
@@ -67,8 +68,13 @@ ourZTNodeIdParser = option (eitherReader parseZTNodeId)
 netCliParamsParser :: Parser NetCliParams
 netCliParamsParser = NetCliParams <$> peersParser
 
-netServParamsParser :: Parser NetServParams
-netServParamsParser = NetServParams <$> peersParser <*> ourZTNodeIdParser
+netServParamsParser :: OptModParser NetServParams
+netServParamsParser = combine <$> peersParser <*> ourZTNodeIdParser <|> pure id
+  where
+    combine :: [ZTNodeId] -> ZTNodeId -> NetServParamsRecP -> NetServParamsRecP
+    combine peers ourAddr params = params
+        & L.option #peers      ?~ peers
+        & L.option #ourAddress ?~ ourAddr
 
 ----------------------------------------------------------------------------
 -- Metrics server
@@ -85,13 +91,20 @@ metricsServerParser =
 -- Utils
 ---------------------------------------------------------------------------
 
-committeeParamsParser :: Parser CommitteeParams
-committeeParamsParser =
-    combine <$> nParser <*> optional commSecretParser
+committeeKeyParamsParser :: OptModParser CommitteeKeyParams
+committeeKeyParamsParser = #params .:+
+    (#participantN .:: nParser <*<
+     (#paramsType .:: ("open" <$ openP)) <|>
+     ((#paramsType .:: pure "closed" <*<
+       #closed .:- (#secret .:: commSecretParser)
+      )
+     )
+    )
   where
-    combine cpParticipantN Nothing         = CommitteeParamsOpen {..}
-    combine cpParticipantN (Just cpSecret) = CommitteeParamsClosed {..}
-
+    openP = flag' () $
+      long "comm-open" <>
+      help "Use open committee and become participant n/N. To use closed \
+           \committee instead provide a value for `--comm-sec` option instead."
     nParser = option auto
         (long "comm-n" <>
          metavar "INTEGER" <>
@@ -101,17 +114,26 @@ committeeParamsParser =
     commSecretParser = option committeeSecretReadM
         (long "comm-sec" <>
          metavar "BYTESTRING" <>
-         help "Committee secret key. Common key for the core nodes \
-              \which serves as root key in generation of participants' secrets.")
+         help "Committee secret key. Common key for the core nodes which serves\
+              \ as root key in generation of participants' secrets. To use an \
+              \open committee, provide the `--comm-open` flag instead.")
 
 -- | CLI parser for witness key params.
--- Note [DSCP-347]: there is a bug -- one cannot redefine committee secret keys
--- with basic key params in CLI. Such usecase is not very likely, but
--- this is still counterintuitive.
-witnessKeyParamsParser :: ModParser WitnessKeyParams
-witnessKeyParamsParser =
-    modifying (Committee <$> committeeParamsParser) <|>
-    over _Basic <$> baseKeyParamsParser "witness"
+witnessKeysParamsParser :: OptModParser WitnessKeysParams
+witnessKeysParamsParser = #params .:+
+    (#paramsType %:: (basicP <|> committeeP) <*<
+     #basic      .:- baseKeyParamsParser "witness" <*<
+     #committee  .:- committeeKeyParamsParser
+    )
+  where
+    basicP = flag' (const "basic") $
+      long "witness-keys-basic" <>
+      help "Use basic secret key manipulation. To use committee governance \
+           \instead, provide `--witness-keys-committee` flag instead."
+    committeeP = flag' (const "committee") $
+      long "witness-keys-comm" <>
+      help "Use committee governance to generate keys. To use basic secret keys\
+           \ manipulation instead, provide `--witness-keys-basic` flag instead."
 
 ---------------------------------------------------------------------------
 -- Readers
@@ -127,9 +149,9 @@ committeeSecretReadM =
 
 witnessConfigParser :: OptModParser WitnessConfig
 witnessConfigParser = #witness .:<
-    (#db %:: rocksParamsParser <*<
-     #network .:: netServParamsParser <*<
-     #keys %:: witnessKeyParamsParser <*<
+    (#db .:< rocksParamsParser <*<
+     #network .:< netServParamsParser <*<
+     #keys .:< witnessKeysParamsParser <*<
      #api .:: (Just <$> serverParamsParser "Witness") <*<
-     #appDir .:: appDirParamParser <*<
+     #appDir .:< appDirParamParser <*<
      #metricsEndpoint .:: metricsServerParser)

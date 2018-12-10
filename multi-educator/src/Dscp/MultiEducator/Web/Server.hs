@@ -80,10 +80,10 @@ mkMultiEducatorApiServer jwtSet cookieSet nat =
 mkStudentApiServer'
     :: forall ctx m. MultiEducatorWorkMode ctx m
     => (forall x. m x -> Handler x)
-    -> EducatorBotParams
+    -> EducatorBotParamsRec
     -> m (Text -> Server ProtectedStudentAPI)
 mkStudentApiServer' nat botParams = do
-    case ebpEnabled botParams of
+    case botParams ^. option #enabled of
       _ {-EducatorBotOff-} -> return $ \login -> getServer login . studentApiHandlers
       -- To initilialize the bot we need a database, how do we choose a database?
       {-EducatorBotOn params -> initializeBot params $ do
@@ -101,7 +101,7 @@ mkStudentApiServer' nat botParams = do
 mkStudentApiServer
     :: forall ctx m. MultiEducatorWorkMode ctx m
     => (forall x. m x -> Handler x)
-    -> EducatorBotParams
+    -> EducatorBotParamsRec
     -> m (Server MultiStudentAPI)
 mkStudentApiServer nat botParams = do
     studApi <- mkStudentApiServer' nat botParams
@@ -116,7 +116,7 @@ mkStudentApiServer nat botParams = do
 -- If bot is enabled, all students are allowed to use API.
 createStudentCheckAction
     :: forall ctx m. MultiEducatorWorkMode ctx m
-    => EducatorBotParams
+    => EducatorBotParamsRec
     -> m StudentCheckAction
 createStudentCheckAction _ =
     return . StudentCheckAction . const $ pure True
@@ -143,7 +143,7 @@ serveEducatorAPIsReal :: MultiCombinedWorkMode ctx m => Bool -> m ()
 serveEducatorAPIsReal withWitnessApi = do
     let webCfg = multiEducatorConfig ^. sub #educator . sub #api
         ServerParams{..}  = webCfg ^. option #serverParams
-        botParams         = webCfg ^. option #botParams
+        botParams         = webCfg ^. sub #botParams
         studentAPINoAuth  = webCfg ^. option #studentAPINoAuth
 
     studentCheckAction <- createStudentCheckAction botParams

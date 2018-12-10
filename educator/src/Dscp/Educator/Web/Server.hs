@@ -28,7 +28,7 @@ import Dscp.Educator.Config
 import Dscp.Educator.DB (existsStudent)
 import Dscp.Educator.Launcher.Mode (EducatorNode, EducatorWorkMode)
 import Dscp.Educator.Web.Auth
-import Dscp.Educator.Web.Bot (EducatorBotParams (..), addBotHandlers, initializeBot)
+import Dscp.Educator.Web.Bot (EducatorBotParamsRec, addBotHandlers, initializeBot)
 import Dscp.Educator.Web.Educator (EducatorPublicKey (..), ProtectedEducatorAPI,
                                    convertEducatorApiHandler, educatorApiHandlers,
                                    protectedEducatorAPI)
@@ -61,10 +61,10 @@ mkEducatorApiServer nat =
 mkStudentApiServer
     :: forall ctx m. EducatorWorkMode ctx m
     => (forall x. m x -> Handler x)
-    -> EducatorBotParams
+    -> EducatorBotParamsRec
     -> m (Server ProtectedStudentAPI)
 mkStudentApiServer nat botParams =
-    if ebpEnabled botParams
+    if botParams ^. option #enabled
     then initializeBot botParams $ return $ \student ->
         getServer . addBotHandlers student .
         studentApiHandlers $ student
@@ -81,10 +81,10 @@ mkStudentApiServer nat botParams =
 -- If bot is enabled, all students are allowed to use API.
 createStudentCheckAction
     :: forall ctx m. EducatorWorkMode ctx m
-    => EducatorBotParams
+    => EducatorBotParamsRec
     -> m StudentCheckAction
-createStudentCheckAction EducatorBotParams {..}
-    | ebpEnabled = return . StudentCheckAction . const $ pure True
+createStudentCheckAction botParams
+    | (botParams ^. option #enabled) = return . StudentCheckAction . const $ pure True
     | otherwise = do
           UnliftIO unliftIO <- askUnliftIO
           return . StudentCheckAction $ \pk ->
@@ -106,7 +106,7 @@ serveEducatorAPIsReal :: EducatorWorkMode ctx m => Bool -> m ()
 serveEducatorAPIsReal withWitnessApi = do
     let webCfg = educatorConfig ^. sub #educator . sub #api
         ServerParams{..}  = webCfg ^. option #serverParams
-        botParams         = webCfg ^. option #botParams
+        botParams         = webCfg ^. sub #botParams
         educatorAPINoAuth = webCfg ^. option #educatorAPINoAuth
         studentAPINoAuth  = webCfg ^. option #studentAPINoAuth
 

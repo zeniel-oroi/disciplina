@@ -1,5 +1,6 @@
-{-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE QuasiQuotes   #-}
+{-# LANGUAGE ApplicativeDo    #-}
+{-# LANGUAGE QuasiQuotes      #-}
+{-# LANGUAGE OverloadedLabels #-}
 
 -- | Common CLI params.
 
@@ -18,7 +19,7 @@ module Dscp.CommonCLI
 
 import Data.Char (toLower)
 import Data.Version (showVersion)
-import Loot.Config.CLI (ModParser, (..:), (<*<))
+import Loot.Config.CLI (OptModParser, (.::), (.:+), (.:-), (<*<))
 import Options.Applicative (Parser, ReadM, auto, eitherReader, flag', help, infoOption, long,
                             maybeReader, metavar, option, str, strOption)
 import Servant.Client (BaseUrl (..), parseBaseUrl)
@@ -39,11 +40,11 @@ versionOption = infoOption ("disciplina-" <> (showVersion version)) $
     long "version" <>
     help "Show version."
 
-baseKeyParamsParser :: Text -> ModParser BaseKeyParams
+baseKeyParamsParser :: Text -> OptModParser BaseKeyParams
 baseKeyParamsParser who =
-    bkpPathL       ..: kpKeyPathParser <*<
-    bkpGenNewL     ..: kpGenKeyParser <*<
-    bkpPassphraseL ..: kpPassphraseParser
+    #path       .:: kpKeyPathParser <*<
+    #genNew     .:: kpGenKeyParser <*<
+    #passphrase .:: kpPassphraseParser
   where
     kpKeyPathParser = fmap Just . strOption $
          long [qc|{who}-keyfile|] <>
@@ -59,10 +60,13 @@ baseKeyParamsParser who =
          metavar "PASSWORD" <>
          help "Password of secret key."
 
-appDirParamParser :: Parser AppDirParam
-appDirParamParser =
-    AppDirectorySpecific <$> specificP <|>
-    AppDirectoryOS <$ osP
+appDirParamParser :: OptModParser AppDirConfig
+appDirParamParser = #param .:+
+    ((#paramType .:: ("os" <$ osP)) <|>
+     (#paramType .:: pure "specific" <*<
+      #specific .:- (#path .:: specificP)
+     )
+    )
   where
     specificP = strOption $
       long "appdir" <>
