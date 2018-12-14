@@ -36,7 +36,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Buildable as B
 import qualified Data.Text.Lazy.Builder as B
 import Data.Time.Clock.POSIX (getPOSIXTime)
-import Fmt (blockListF, (+|), (|+), Builder)
+import Fmt (Builder, blockListF, (+|), (|+))
 import GHC.IO.Unsafe (unsafePerformIO)
 import GHC.TypeLits (KnownSymbol, symbolVal)
 import Loot.Log (Severity (Info))
