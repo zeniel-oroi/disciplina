@@ -56,7 +56,7 @@ import Data.Yaml (FromJSON (..), ParseException (AesonException), decodeFileEith
 import Fmt (blockListF)
 import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
 import Loot.Base.HasLens (HasLens', lensOf)
-import Loot.Config (ConfigKind (Final, Partial), ConfigRec, HasLensC, finalise, 
+import Loot.Config (ConfigKind (Final, Partial), ConfigRec, HasLensC, finalise,
                     finaliseDeferredUnsafe, lensOfC, option, sub, tree, branch,
                     selection)
 import Loot.Config.Record (HasBranch)
@@ -190,7 +190,7 @@ giveLC :: forall path is v . HasGivenC path is v => v
 giveLC = given ^. (lensOfC @path @is @v)
 
 -- | Helper function to read the content of a 'finalise'd 'branch' by unsafely
--- traversing the Maybe. This should only be used on the selected 'branch', in 
+-- traversing the Maybe. This should only be used on the selected 'branch', in
 -- which case no error will be thrown.
 peekBranch
     :: (HasBranch l is us, Contravariant g, Functor g, a ~ ConfigRec 'Final us)

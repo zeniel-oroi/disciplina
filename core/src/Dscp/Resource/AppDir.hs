@@ -67,7 +67,7 @@ prepareAppDir
 prepareAppDir dirConfig = do
     appDir <- case dirConfig ^. tree #param . selection of
         "os"       -> getOSAppDir
-        "specific" -> pure $ 
+        "specific" -> pure $
             dirConfig ^. tree #param . peekBranch #specific . option #path
         sel -> error $ "unknown AppDir type: " <> fromString sel
     -- we would unlikely have logging context here

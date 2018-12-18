@@ -32,7 +32,7 @@ module Dscp.Core.Config
 
 import Control.Lens ((?~))
 import Data.Reflection (Given (..), give)
-import Loot.Config ((:::), (::<), ConfigKind (Final, Partial), ConfigRec, 
+import Loot.Config ((:::), (::<), ConfigKind (Final, Partial), ConfigRec,
                     finaliseDeferredUnsafe, option, sub)
 
 import Dscp.Config (giveL, giveLC)
