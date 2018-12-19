@@ -104,7 +104,7 @@ committeeKeyParamsParser = #params .:+
     openP = flag' () $
       long "comm-open" <>
       help "Use open committee and become participant n/N. To use closed \
-           \committee instead provide a value for `--comm-sec` option instead."
+           \committee instead, provide a value for `--comm-sec` option."
     nParser = option auto
         (long "comm-n" <>
          metavar "INTEGER" <>
@@ -129,11 +129,11 @@ witnessKeysParamsParser = #params .:+
     basicP = flag' (const "basic") $
       long "witness-keys-basic" <>
       help "Use basic secret key manipulation. To use committee governance \
-           \instead, provide `--witness-keys-committee` flag instead."
+           \instead, provide `--witness-keys-committee` flag."
     committeeP = flag' (const "committee") $
       long "witness-keys-comm" <>
       help "Use committee governance to generate keys. To use basic secret keys\
-           \ manipulation instead, provide `--witness-keys-basic` flag instead."
+           \ manipulation instead, provide `--witness-keys-basic` flag."
 
 ---------------------------------------------------------------------------
 -- Readers

@@ -10,7 +10,7 @@ module Dscp.Educator.CLI
     , publishingPeriodParser
     ) where
 
-import Loot.Config (OptModParser, uplift, (.::), (.:<), (.:+), (.:-), (<*<))
+import Loot.Config (OptModParser, uplift, (%::), (.::), (.:<), (.:+), (.:-), (<*<))
 import Options.Applicative (Parser, auto, flag', help, long, metavar, option, strOption)
 import Time (Second, Time)
 
@@ -25,7 +25,7 @@ import Dscp.Witness.CLI (witnessConfigParser)
 
 sqliteParamsParser :: OptModParser SQLiteParams
 sqliteParamsParser = #mode .:+
-    (#modeType .:: strOption (long "modeType") <*<
+    (#modeType %:: (inMemoryP <|> realP) <*<
      #real .:-
         (#path       .:: pathParser <*<
          #connNum    .:: connNumParser <*<
@@ -33,6 +33,14 @@ sqliteParamsParser = #mode .:+
         )
     )
   where
+    inMemoryP = flag' (const "inMemory") $
+        long "sql-mode-in-memory" <>
+        help "Use in-memory SQLite mode. To use real SQLite mode instead, \
+             \provide `--sql-mode-real` flag."
+    realP = flag' (const "real") $
+        long "sql-mode-real" <>
+        help "Use SQLite with a file and a number of connections, for in-memory\
+             \ SQLite mode, provide `--sql-mode-in-memory` flag instead."
     pathParser = strOption $
         long "sql-path" <>
         metavar "FILEPATH" <>

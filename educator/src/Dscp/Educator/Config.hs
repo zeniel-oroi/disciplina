@@ -26,6 +26,7 @@ import Dscp.DB.SQLite
 import Dscp.Educator.Launcher.Params
 import Dscp.Educator.Web.Bot.Params
 import Dscp.Educator.Web.Config
+import Dscp.Resource.Keys
 import Dscp.Witness.Config
 
 type EducatorConfig = WitnessConfig ++
@@ -56,6 +57,7 @@ defaultEducatorConfig = upcast defaultWitnessConfig
         & tree #mode . branch #real . option #path       ?~ "educator-db"
         & tree #mode . branch #real . option #connNum    ?~ Nothing
         & tree #mode . branch #real . option #maxPending ?~ 200
+    defBaseKeyParams :: BaseKeyParamsRecP
     defBaseKeyParams = mempty
         & option #path       ?~ Nothing
         & option #genNew     ?~ False
