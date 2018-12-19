@@ -119,6 +119,8 @@ data AccountException
     | CannotAffordFees
       { aeSpent :: Integer, aeBalance :: Integer }
       -- ^ Given account state cannot afford given fees.
+    | WitnessMismatchesInput
+      { aeSignerAddress :: Address, aeInput :: Address }
     deriving (Eq, Ord)
 
 makePrisms ''AccountException
@@ -164,6 +166,9 @@ instance Buildable AccountException where
         CannotAffordFees{..} ->
             "Tx sender can not afford fees: sending " +| unsafeMkCoin aeSpent |+
             ", while balance is " +| unsafeMkCoin aeBalance |+ ""
+        WitnessMismatchesInput{..} ->
+            "Transaction input " +| aeInput |+ " does not correspond to public key in \
+            \witness (address=" +| aeSignerAddress |+ ")"
 
 instance Show AccountException where
     show = toString . pretty

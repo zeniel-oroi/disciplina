@@ -109,15 +109,16 @@ spec_Money_tx_application = do
             lift $ throwsPrism (_AccountError . _NonceMismatch) $
                 applyTx tx
 
-        it "Bad input address is not fine" $ witnessProperty $ do
+        it "Input address different from signer is not fine" $ witnessProperty $ do
             txData <- pick genSafeTxData
-            sourceAddr <- pick (arbitrary @Address)
+            sourceAddr <- mkAddr . toPublic <$> pick selectGenesisSecret
             pre (sourceAddr /= mkAddr (toPublic $ tdSecret txData))
 
             let steps = properSteps
                     & tcsInAcc %~ \f addr -> (f addr){ tiaAddr = sourceAddr }
             let tx = makeTx steps txData
-            lift $ throwsSome $ applyTx tx
+
+            lift . throwsSome $ applyTx tx
 
         it "Having no money is not fine" $ witnessProperty $ do
             txData' <- pick genSafeTxData
